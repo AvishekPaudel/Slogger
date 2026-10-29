@@ -1,43 +1,32 @@
-Slogger — Log Analyzer
+# Slogger — Log Analyzer
 
 Slogger is a Python and Django-based log analyzer designed to extract useful statistics from web server access logs. It currently analyzes Nginx-style access logs through a custom Django management command.
 
 The project starts with simple, single-machine log analysis and aims to evolve into a scalable, distributed logging and reporting system.
 
-Features
+## Features
 
-Parse Nginx-style HTTP access logs.
+- Parse Nginx-style HTTP access logs.
+- Count total log lines and successfully parsed requests.
+- Detect malformed log entries.
+- Group HTTP responses into 2xx, 3xx, 4xx, and 5xx categories.
+- Count individual HTTP status codes.
+- Identify the most active IP addresses.
+- Identify the most frequently requested endpoints.
+- Calculate total response bytes.
+- Handle missing log files with a clear error message.
+- Process logs line by line to avoid loading the entire file into memory.
 
-Count total log lines and successfully parsed requests.
+## Technology Stack
 
-Detect malformed log entries.
+- **Language:** Python
+- **Framework:** Django 6.0.4
+- **Log format:** Nginx-style access logs
+- **Testing:** Django test framework
 
-Group HTTP responses into 2xx, 3xx, 4xx, and 5xx categories.
+## Project Structure
 
-Count individual HTTP status codes.
-
-Identify the most active IP addresses.
-
-Identify the most frequently requested endpoints.
-
-Calculate total response bytes.
-
-Handle missing log files with a clear error message.
-
-Process logs line by line to avoid loading the entire file into memory.
-
-Technology Stack
-
-Language: Python
-
-Framework: Django 6.0.4
-
-Log format: Nginx-style access logs
-
-Testing: Django test framework
-
-Project Structure
-
+```text
 Slogger/
 ├── manage.py
 ├── Slogger/
@@ -61,73 +50,95 @@ Slogger/
 ├── reports/
 ├── requirements.txt
 └── README.md
+```
 
-Note: The structure above illustrates the intended layout. Some files, including requirements.txt, may need to be created if they don't already exist.
+*Note: The structure above illustrates the intended layout. Some files, including `requirements.txt`, may need to be created if they don't already exist.*
 
-Getting Started
+## Getting Started
 
-1. Clone the repository
+### 1. Clone the repository
 
+```bash
 git clone https://github.com/YOUR_USERNAME/Slogger.git
 cd Slogger
+```
 
-Replace YOUR_USERNAME with your GitHub username and use your actual repository URL.
+Replace `YOUR_USERNAME` with your GitHub username and use your actual repository URL.
 
-2. Create a virtual environment
+### 2. Create a virtual environment
 
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
+```
 
-3. Install dependencies
+### 3. Install dependencies
 
-If requirements.txt exists:
+If `requirements.txt` exists:
 
+```bash
 pip install -r requirements.txt
+```
 
 Otherwise, install Django:
 
+```bash
 pip install "Django==6.0.4"
+```
 
 You can create a dependency file for the current environment with:
 
+```bash
 pip freeze > requirements.txt
+```
 
 For a cleaner project, keep only the dependencies the application actually requires.
 
-4. Run Django checks
+### 4. Run Django checks
 
+```bash
 python3 manage.py check
+```
 
-5. Prepare a log file
+### 5. Prepare a log file
 
-Place your Nginx-style access log at logs/access.log, or specify another supported log file path.
+Place your Nginx-style access log at `logs/access.log`, or specify another supported log file path.
 
 Example log entries:
 
+```text
 192.168.1.10 - - [27/Oct/2026:09:00:00 +0545] "GET / HTTP/1.1" 200 1024
 192.168.1.11 - - [27/Oct/2026:09:00:05 +0545] "GET /login HTTP/1.1" 404 512
 192.168.1.12 - - [27/Oct/2026:09:01:00 +0545] "GET /api/users HTTP/1.1" 500 120
+```
 
 These are illustrative sample entries, not logs from a live server.
 
-6. Analyze the logs
+### 6. Analyze the logs
 
 Run the analyzer using Django's custom management command:
 
+```bash
 python3 manage.py analyze_logs logs/access.log
+```
 
 You can also analyze a different file:
 
+```bash
 python3 manage.py analyze_logs /path/to/access.log
+```
 
-7. Run automated tests
+### 7. Run automated tests
 
+```bash
 python3 manage.py test analyzer
+```
 
 The tests cover request statistics, malformed log entries, and missing-file handling.
 
-Example Output
+## Example Output
 
+```text
 ========== LOG ANALYSIS ==========
 File: logs/access.log
 Total lines: 10
@@ -148,21 +159,20 @@ Status-code counts:
   500: 1
   503: 1
 ==================================
+```
 
 Actual output depends on the contents of the input file.
 
-Current Limitations
+## Current Limitations
 
 Slogger is an early-stage project. The current implementation:
 
-Supports a specific Nginx-style access-log format.
+- Supports a specific Nginx-style access-log format.
+- Processes one file per command execution.
+- Keeps aggregation statistics in memory.
+- Does not yet collect logs from remote machines.
+- Does not yet provide a web dashboard or reporting API.
+- Does not yet include distributed ingestion or background workers.
 
-Processes one file per command execution.
 
-Keeps aggregation statistics in memory.
-
-Does not yet collect logs from remote machines.
-
-Does not yet provide a web dashboard or reporting API.
-
-Does not yet include distributed ingestion or background workers.
+**Slogger — Start small. Analyze logs. Scale gradually.**
