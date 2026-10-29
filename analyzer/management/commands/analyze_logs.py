@@ -1,20 +1,15 @@
+
 from collections import Counter
 from pathlib import Path
-import re
 
 from django.core.management.base import BaseCommand, CommandError
 
-
-LOG_PATTERN = re.compile(
-    r'^(?P<ip>\S+) \S+ \S+ '
-    r'\[(?P<timestamp>[^\]]+)\] '
-    r'"(?P<method>\S+) (?P<path>\S+) HTTP/[^"]+" '
-    r'(?P<status>\d{3}) (?P<bytes>\d+|-)$'
-)
+from analyzer.parser import parse_line
 
 
 class Command(BaseCommand):
     help = "Analyze an Nginx-style access log."
+
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -22,9 +17,20 @@ class Command(BaseCommand):
             type=Path,
             help="Path to the access log file",
         )
+        parser.add_argument(
+            "--top",
+            type=int,
+            default=5,
+            help="Number of top IP addresses and endpoints to display",
+        )
 
     def handle(self, *args, **options):
         logfile = options["logfile"]
+        top_n = options["top"]
+
+        if top_n < 1:
+            raise CommandError("--top must be at least 1")
+
 
         if not logfile.is_file():
             raise CommandError(f"Log file not found: {logfile}")
@@ -32,6 +38,7 @@ class Command(BaseCommand):
         total_lines = 0
         parsed_lines = 0
         malformed_lines = 0
+
         status_counts = Counter()
         ip_counts = Counter()
         endpoint_counts = Counter()
@@ -43,22 +50,21 @@ class Command(BaseCommand):
             ) as log_file:
                 for line in log_file:
                     total_lines += 1
-                    match = LOG_PATTERN.match(line.rstrip("\r\n"))
+                    data = parse_line(line)
 
-                    if not match:
+                    if data is None:
                         malformed_lines += 1
                         continue
 
                     parsed_lines += 1
-                    data = match.groupdict()
 
-                    status = int(data["status"])
+                    status = data["status"]
                     status_counts[status] += 1
                     ip_counts[data["ip"]] += 1
                     endpoint_counts[data["path"]] += 1
 
-                    if data["bytes"] != "-":
-                        total_bytes += int(data["bytes"])
+                    if data["bytes"] is not None:
+                        total_bytes += data["bytes"]
 
         except OSError as exc:
             raise CommandError(
@@ -73,6 +79,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Total response bytes: {total_bytes}")
 
         self.stdout.write("\nHTTP status groups:")
+
         for group, label in [
             (2, "Successful (2xx)"),
             (3, "Redirects (3xx)"),
@@ -90,11 +97,11 @@ class Command(BaseCommand):
             self.stdout.write(f"  {status}: {count}")
 
         self.stdout.write("\nTop IP addresses:")
-        for ip, count in ip_counts.most_common(5):
+        for ip, count in ip_counts.most_common(top_n):
             self.stdout.write(f"  {ip}: {count}")
 
         self.stdout.write("\nTop endpoints:")
-        for endpoint, count in endpoint_counts.most_common(5):
+        for endpoint, count in endpoint_counts.most_common(top_n):
             self.stdout.write(f"  {endpoint}: {count}")
 
         self.stdout.write("==================================")
