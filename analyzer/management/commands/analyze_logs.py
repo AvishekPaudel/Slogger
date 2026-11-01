@@ -1,6 +1,8 @@
 
 from pathlib import Path
 
+from analyzer.reporting import export_json, export_csv
+
 from django.core.management.base import BaseCommand, CommandError
 
 from analyzer.services import analyze_log_file
@@ -23,6 +25,19 @@ class Command(BaseCommand):
             help="Number of top IP addresses and endpoints to display",
         )
 
+        parser.add_argument(
+            "--format",
+            choices=["terminal", "json", "csv"],
+            default="terminal",
+            help="Output format",
+        )
+        
+        parser.add_argument(
+            "--output",
+            type=Path,
+            help="Output file path for JSON or CSV reports",
+        )
+
     def handle(self, *args, **options):
         logfile = options["logfile"]
         top_n = options["top"]
@@ -35,6 +50,27 @@ class Command(BaseCommand):
 
         try:
             report = analyze_log_file(logfile)
+            output_format = options["format"]
+            output_file = options["output"]
+            
+            if output_format in ["json", "csv"]:
+                if output_file is None:
+                    extension = output_format
+                    output_file = Path("reports") / f"access_report.{extension}"
+            
+                output_file.parent.mkdir(parents=True, exist_ok=True)
+            
+                if output_format == "json":
+                    export_json(report, output_file)
+                else:
+                    export_csv(report, output_file)
+            
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"Report successfully saved to {output_file}"
+                    )
+                )
+                return
         except OSError as exc:
             raise CommandError(
                 f"Unable to read {logfile}: {exc}"

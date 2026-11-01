@@ -1,7 +1,13 @@
+import json
+import csv
+
+from analyzer.reporting import export_json, export_csv
 
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+
+
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -56,3 +62,41 @@ class AnalyzeLogsTests(SimpleTestCase):
 
             with self.assertRaises(CommandError):
                 call_command("analyze_logs", str(missing_path))
+
+    
+class ReportingTests(SimpleTestCase):
+
+    def setUp(self):
+        self.report = {
+            "total_lines": 10,
+            "parsed_lines": 10,
+            "malformed_lines": 0,
+            "total_bytes": 6098,
+            "status_counts": {200: 5, 404: 2, 500: 1},
+            "ip_counts": {"192.168.1.10": 4},
+            "endpoint_counts": {"/": 2},
+        }
+
+    def test_json_export(self):
+        with TemporaryDirectory() as directory:
+            output = Path(directory) / "report.json"
+
+            export_json(self.report, output)
+
+            data = json.loads(output.read_text(encoding="utf-8"))
+
+            self.assertEqual(data["total_lines"], 10)
+            self.assertEqual(data["total_bytes"], 6098)
+
+    def test_csv_export(self):
+        with TemporaryDirectory() as directory:
+            output = Path(directory) / "report.csv"
+
+            export_csv(self.report, output)
+
+            with output.open(encoding="utf-8") as file:
+                rows = list(csv.reader(file))
+
+            self.assertEqual(rows[0], ["Metric", "Name", "Count"])
+            self.assertIn(["Summary", "Total lines", "10"], rows)
+            self.assertIn(["Summary", "Total response bytes", "6098"], rows)
