@@ -100,3 +100,62 @@ class ReportingTests(SimpleTestCase):
             self.assertEqual(rows[0], ["Metric", "Name", "Count"])
             self.assertIn(["Summary", "Total lines", "10"], rows)
             self.assertIn(["Summary", "Total response bytes", "6098"], rows)
+
+    def test_filters_by_single_status_code(self):
+        sample = (
+            '192.168.1.10 - - [27/Oct/2026:09:00:00 +0545] '
+            '"GET / HTTP/1.1" 200 1024\n'
+            '192.168.1.11 - - [27/Oct/2026:09:02:00 +0545] '
+            '"GET /missing HTTP/1.1" 404 220\n'
+            '192.168.1.10 - - [27/Oct/2026:09:03:00 +0545] '
+            '"GET /api HTTP/1.1" 500 120\n'
+        )
+    
+        with TemporaryDirectory() as directory:
+            log_path = Path(directory) / "access.log"
+            log_path.write_text(sample, encoding="utf-8")
+    
+            output = StringIO()
+            call_command(
+                "analyze_logs",
+                str(log_path),
+                "--status",
+                "500",
+                stdout=output,
+            )
+    
+        report = output.getvalue()
+    
+        self.assertIn("Parsed requests: 1", report)
+        self.assertIn("Total response bytes: 120", report)
+        self.assertIn("500: 1", report)
+    
+    
+    def test_filters_by_multiple_status_codes(self):
+        sample = (
+            '192.168.1.10 - - [27/Oct/2026:09:00:00 +0545] '
+            '"GET / HTTP/1.1" 200 1024\n'
+            '192.168.1.11 - - [27/Oct/2026:09:02:00 +0545] '
+            '"GET /missing HTTP/1.1" 404 220\n'
+            '192.168.1.10 - - [27/Oct/2026:09:03:00 +0545] '
+            '"GET /api HTTP/1.1" 500 120\n'
+        )
+    
+        with TemporaryDirectory() as directory:
+            log_path = Path(directory) / "access.log"
+            log_path.write_text(sample, encoding="utf-8")
+    
+            output = StringIO()
+            call_command(
+                "analyze_logs",
+                str(log_path),
+                "--status",
+                "404",
+                "500",
+                stdout=output,
+            )
+    
+        report = output.getvalue()
+    
+        self.assertIn("Parsed requests: 2", report)
+        self.assertIn("Total response bytes: 340", report)

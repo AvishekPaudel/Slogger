@@ -38,6 +38,13 @@ class Command(BaseCommand):
             help="Output file path for JSON or CSV reports",
         )
 
+        parser.add_argument(
+            "--status",
+            type=int,
+            nargs="+",
+            help="Filter requests by HTTP status code",
+        )
+
     def handle(self, *args, **options):
         logfile = options["logfile"]
         top_n = options["top"]
@@ -49,7 +56,15 @@ class Command(BaseCommand):
             raise CommandError(f"Log file not found: {logfile}")
 
         try:
-            report = analyze_log_file(logfile)
+            status_filter = options["status"]
+            
+            if status_filter:
+                status_filter = set(status_filter)
+            
+            report = analyze_log_file(
+                logfile,
+                status_filter=status_filter,
+            )
             output_format = options["format"]
             output_file = options["output"]
             

@@ -4,7 +4,7 @@ from collections import Counter
 from analyzer.parser import parse_line
 
 
-def analyze_log_file(logfile):
+def analyze_log_file(logfile, status_filter=None):
     """Read a log file and calculate access-log statistics."""
 
     total_lines = 0
@@ -30,9 +30,12 @@ def analyze_log_file(logfile):
                 malformed_lines += 1
                 continue
 
-            parsed_lines += 1
-
             status = data["status"]
+
+            if status_filter and status not in status_filter:
+                continue
+
+            parsed_lines +=1
 
             status_counts[status] += 1
             ip_counts[data["ip"]] += 1
