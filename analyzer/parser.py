@@ -1,6 +1,8 @@
 
 import re
 
+from datetime import datetime
+
 
 LOG_PATTERN = re.compile(
     r'^(?P<ip>\S+) \S+ \S+ '
@@ -21,6 +23,10 @@ def parse_line(line):
         return None
 
     data = match.groupdict()
+    data["datetime"] = datetime.strptime(
+        data["timestamp"],
+        "%d/%b/%Y:%H:%M:%S %z",
+    )
 
     data["status"] = int(data["status"])
     data["bytes"] = (

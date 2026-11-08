@@ -14,6 +14,7 @@ def analyze_log_file(logfile, status_filter=None):
     status_counts = Counter()
     ip_counts = Counter()
     endpoint_counts = Counter()
+    requests_per_minute = Counter()
 
     total_bytes = 0
 
@@ -37,6 +38,13 @@ def analyze_log_file(logfile, status_filter=None):
 
             parsed_lines +=1
 
+            minute = data["datetime"].replace(
+                second=0,
+                microsecond=0,
+            )
+            
+            requests_per_minute[minute] += 1
+
             status_counts[status] += 1
             ip_counts[data["ip"]] += 1
             endpoint_counts[data["path"]] += 1
@@ -52,4 +60,5 @@ def analyze_log_file(logfile, status_filter=None):
         "status_counts": status_counts,
         "ip_counts": ip_counts,
         "endpoint_counts": endpoint_counts,
+        "requests_per_minute": requests_per_minute,
     }
