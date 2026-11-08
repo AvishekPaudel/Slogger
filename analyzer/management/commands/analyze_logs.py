@@ -127,4 +127,13 @@ class Command(BaseCommand):
         for endpoint, count in report["endpoint_counts"].most_common(top_n):
             self.stdout.write(f"  {endpoint}: {count}")
 
+        self.stdout.write("\nRequests per minute:")
+        
+        for minute, count in sorted(
+            report["requests_per_minute"].items()
+        ):
+            self.stdout.write(
+                f"  {minute.strftime('%H:%M')}: {count}"
+            )
+
         self.stdout.write("==================================")

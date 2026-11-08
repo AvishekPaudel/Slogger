@@ -6,6 +6,7 @@ from analyzer.reporting import export_json, export_csv
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from datetime import datetime
 
 
 
@@ -75,6 +76,10 @@ class ReportingTests(SimpleTestCase):
             "status_counts": {200: 5, 404: 2, 500: 1},
             "ip_counts": {"192.168.1.10": 4},
             "endpoint_counts": {"/": 2},
+            "requests_per_minute": {
+                datetime(2026, 10, 27, 9, 0): 2,
+                datetime(2026, 10, 27, 9, 1): 1,
+            },
         }
 
     def test_json_export(self):
@@ -87,6 +92,10 @@ class ReportingTests(SimpleTestCase):
 
             self.assertEqual(data["total_lines"], 10)
             self.assertEqual(data["total_bytes"], 6098)
+            self.assertEqual(
+                data["requests_per_minute"]["2026-10-27 09:00"],
+                2,
+            )
 
     def test_csv_export(self):
         with TemporaryDirectory() as directory:
@@ -100,6 +109,10 @@ class ReportingTests(SimpleTestCase):
             self.assertEqual(rows[0], ["Metric", "Name", "Count"])
             self.assertIn(["Summary", "Total lines", "10"], rows)
             self.assertIn(["Summary", "Total response bytes", "6098"], rows)
+            self.assertIn(
+                ["Requests per minute", "2026-10-27 09:00", "2"],
+                rows,
+            )
 
     def test_filters_by_single_status_code(self):
         sample = (

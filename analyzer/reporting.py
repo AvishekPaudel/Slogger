@@ -7,6 +7,7 @@ from pathlib import Path
 
 def convert_report(report):
     """Convert Counter objects into JSON-compatible dictionaries."""
+    
 
     return {
         "total_lines": report["total_lines"],
@@ -16,6 +17,10 @@ def convert_report(report):
         "status_counts": dict(report["status_counts"]),
         "ip_counts": dict(report["ip_counts"]),
         "endpoint_counts": dict(report["endpoint_counts"]),
+        "requests_per_minute": {
+            minute.strftime("%Y-%m-%d %H:%M"): count
+            for minute, count in report["requests_per_minute"].items()
+        },
     }
 
 
@@ -54,3 +59,10 @@ def export_csv(report, output_file):
 
         for endpoint, count in report["endpoint_counts"].items():
             writer.writerow(["Endpoint", endpoint, count])
+
+        for minute, count in report["requests_per_minute"].items():
+            writer.writerow([
+                "Requests per minute",
+                minute.strftime("%Y-%m-%d %H:%M"),
+                count,
+            ])
